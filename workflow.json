@@ -1,0 +1,349 @@
+{
+  "name": "social Media auto poster",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -560,
+        32
+      ],
+      "id": "9e44a894-b062-4f69-9a6d-b4c660b2256a",
+      "name": "When chat message received",
+      "webhookId":" YOUR_WEBHOOK_ID "
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        240
+      ],
+      "id": "f5c61c35-e968-404b-bb27-909931b173ec",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "avNm2CdBoLylDs0N",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are an expert visual prompt engineer for the FLUX.1 AI image generation model.\nYour task is to transform the user's input:{{ $json.chatInput }} ,idea into a highly detailed, natural language description optimized for photorealism and cinematic quality.\n\nFollow these rules strictly:\n1. USE NATURAL LANGUAGE: Write in full, descriptive sentences. Avoid comma-separated keyword lists.\n2. BE SPECIFIC: Describe lighting, texture, camera angle, and atmosphere.\n3. NO FILLER: Output ONLY the prompt. Do not say \"Here is the prompt\" or \"Sure!\".\n4. STRUCTURE: Start with the main subject, then the action/context, then the lighting/style.\n\nExample Input: \"A cybernetic samurai\"\nExample Output: A cinematic shot of a cybernetic samurai standing in a neon-lit Tokyo alleyway at night, rain glistening on their metallic armor, glowing red Katana in hand, volumetric fog, high contrast cyberpunk aesthetic, 8k resolution, hyper-realistic texture.\n"
+            },
+            {
+              "type": "HumanMessagePromptTemplate",
+              "message": "=User Idea: {{ $json.chatInput }}  Requirements: - Transform this idea into a single, highly detailed visual prompt. - Ensure the style is photorealistic and cinematic (unless the user specifies otherwise). - Do not add any conversational text."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -384,
+        32
+      ],
+      "id": "38125a0e-62a6-495f-b3dd-b6190fc0f637",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "name": "=Request-flux - {{$now}}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value":  "YOUR_GOOGLE_DRIVE_FOLDER_LINK",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        160,
+        224
+      ],
+      "id": "626cde18-51cc-4dcf-bc0b-6253e0be4bcc",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AZp0uU17QlTeqzOQ",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c862af4a-4242-4c16-916c-3b9d18c84aa9",
+              "leftValue": "={{ $json.error?true:false }}",
+              "rightValue": 100,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "419f6a09-5d66-40bd-beaf-0609f14dbea7",
+              "leftValue": true,
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -32,
+        64
+      ],
+      "id": "5401add4-8312-4e84-b3fd-1e16af978598",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "*/*"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "inputs",
+              "value": "={{ $json.text }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -192,
+        240
+      ],
+      "id": "cd0904ff-67f2-4c5e-a176-d83eba1ece3f",
+      "name": "Flux ",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "cIWy4x2ELHxgiXnS",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "*/*"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "inputs",
+              "value": "={{ $('Basic LLM Chain').item.json.text }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        176,
+        48
+      ],
+      "id": "86c813c8-fc5b-4e1e-9fec-0936e547f01d",
+      "name": "Stable Diffusion",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "cIWy4x2ELHxgiXnS",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "=Request-diffusion-{{$now}}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value":  "YOUR_GOOGLE_DRIVE_FOLDER_LINK",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        352,
+        48
+      ],
+      "id": "17a0b26c-111b-46c7-93de-524ff1cd59b7",
+      "name": "Upload file01",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "AZp0uU17QlTeqzOQ",
+          "name": "Google Drive account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Flux ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Stable Diffusion",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flux ": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stable Diffusion": {
+      "main": [
+        [
+          {
+            "node": "Upload file01",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f94c0843-0c04-4ef9-8a50-1ec4dd2f0f26",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId":  "hidden"
+  },
+  "id": "tpLJx7i8NRVytLAf",
+  "tags": []
+}

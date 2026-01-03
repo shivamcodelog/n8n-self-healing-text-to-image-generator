@@ -3,7 +3,7 @@
 A robust, production-grade AI image generation workflow that handles API failures gracefully using a Primary/Fallback architecture.
 
 # Preview images
-("/assets/image.png")
+(/assets/image.png)
 
 
 ## 🚀 Features
